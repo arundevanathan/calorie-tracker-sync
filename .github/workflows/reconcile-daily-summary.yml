@@ -5,12 +5,6 @@ on:
     # 20:45 UTC is 02:15 Asia/Kolkata on the following calendar day.
     - cron: "45 20 * * *"
   workflow_dispatch:
-    inputs:
-      include_today:
-        description: "Include today for a manual test run"
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -26,5 +20,4 @@ jobs:
       - name: Reconcile the last five completed days
         env:
           AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
-          INCLUDE_TODAY: ${{ inputs.include_today || 'false' }}
         run: node sync.mjs
