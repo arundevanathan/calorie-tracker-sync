@@ -1,0 +1,23 @@
+name: Reconcile Daily Summary
+
+on:
+  schedule:
+    # 20:45 UTC is 02:15 Asia/Kolkata on the following calendar day.
+    - cron: "45 20 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Reconcile the last five completed days
+        env:
+          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+        run: node sync.mjs
