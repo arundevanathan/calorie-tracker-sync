@@ -3,6 +3,7 @@ const DETAILED_TABLE = "Detailed Data";
 const SUMMARY_TABLE = "Daily Summary";
 const TIME_ZONE = "Asia/Kolkata";
 const WINDOW_DAYS = 5;
+const INCLUDE_TODAY = process.env.INCLUDE_TODAY === "true";
 
 const token = process.env.AIRTABLE_TOKEN;
 if (!token) throw new Error("AIRTABLE_TOKEN is not set.");
@@ -29,7 +30,7 @@ function completedDateKeys() {
   const today = kolkataToday();
   return Array.from({ length: WINDOW_DAYS }, (_, index) => {
     const date = new Date(today);
-    date.setUTCDate(today.getUTCDate() - (index + 1));
+    date.setUTCDate(today.getUTCDate() - (index + (INCLUDE_TODAY ? 0 : 1)));
     return dateKey(date);
   });
 }
@@ -170,6 +171,7 @@ await update(updates);
 await remove(deletes);
 
 console.log(JSON.stringify({
+  includeToday: INCLUDE_TODAY,
   processedDates: [...activeDates].sort(),
   created: creates.length,
   updated: updates.length,

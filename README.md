@@ -15,4 +15,6 @@ Add the Airtable personal access token as the repository Actions secret
 `AIRTABLE_TOKEN`. It needs `data.records:read` and `data.records:write`,
 restricted to the Calorie Tracker base.
 
-Use **Actions → Reconcile Daily Summary → Run workflow** for a manual run.
+Use **Actions → Reconcile Daily Summary → Run workflow** for a manual run. Enable
+**Include today for a manual test run** only when testing current-day entries; the
+scheduled run always excludes today.
