@@ -62,16 +62,11 @@ function isCacheFresh(cached) {
   return Boolean(cached?.fetchedAt && Date.now() - cached.fetchedAt < CACHE_TTL_MS);
 }
 
-function cacheAgeLabel(fetchedAt) {
-  if (!fetchedAt) return "stale cache";
-
-  const ageMinutes = Math.max(0, Math.round((Date.now() - fetchedAt) / 60000));
-  if (ageMinutes < 1) return "just now";
-  if (ageMinutes < 60) return `${ageMinutes}m ago`;
-
-  const hours = Math.floor(ageMinutes / 60);
-  const minutes = ageMinutes % 60;
-  return minutes ? `${hours}h ${minutes}m ago` : `${hours}h ago`;
+function timeLabel(value) {
+  return new Date(value).toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function formatNumber(value, digits = 0) {
@@ -132,10 +127,7 @@ function render(data, options = {}) {
   setText("alcoholJunk", formatNumber(Number(today.junkCalories || 0) + Number(today.alcoholCalories || 0)));
   setText(
     "updated",
-    `${fromCache ? `Cached ${cacheAgeLabel(fetchedAt)}` : "Updated"} ${new Date(data.updatedAt).toLocaleString("en-IN", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    })}`,
+    `Last updated ${timeLabel(fromCache && fetchedAt ? fetchedAt : data.updatedAt)}`,
   );
 
   elements.range7.textContent = last7.length
