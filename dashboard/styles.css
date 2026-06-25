@@ -45,6 +45,15 @@ button:disabled {
   padding: 1rem;
 }
 
+.topbar {
+  padding: 0.4rem 0.25rem 0;
+}
+
+.topbar h2 {
+  font-size: 1.8rem;
+  letter-spacing: -0.04em;
+}
+
 .hero,
 .card,
 .setup {
@@ -136,31 +145,43 @@ h2 {
   margin-bottom: 1rem;
 }
 
-.bars {
+.trend {
   display: grid;
-  gap: 0.65rem;
+  gap: 0.45rem;
 }
 
-.bar-row {
+.trend-head,
+.trend-row {
   display: grid;
-  grid-template-columns: 3.4rem 1fr 4.2rem;
+  grid-template-columns: 4.5rem 1fr 1fr;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.75rem;
+}
+
+.trend-head {
+  margin-bottom: 0.45rem;
+  padding-left: 4.5rem;
+  grid-template-columns: 1fr 1fr;
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.bar-track {
-  height: 0.8rem;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--panel-2);
+.trend-row {
+  padding: 0.7rem 0.75rem;
+  border-radius: 18px;
+  background: rgba(21, 36, 58, 0.78);
 }
 
-.bar-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--good), var(--accent));
+.trend-row strong {
+  font-size: 1.05rem;
+}
+
+.trend-date {
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
 .entries {
@@ -170,29 +191,48 @@ h2 {
 
 .entry {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.5rem;
-  padding-bottom: 0.7rem;
-  border-bottom: 1px solid var(--line);
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(21, 36, 58, 0.58);
 }
 
 .entry:last-child {
-  padding-bottom: 0;
-  border-bottom: 0;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--line);
 }
 
 .entry-title {
   font-weight: 750;
+  line-height: 1.25;
 }
 
 .entry-meta {
   color: var(--muted);
   font-size: 0.83rem;
+  text-align: left;
+}
+
+.entry-numbers {
+  min-width: 4.6rem;
   text-align: right;
 }
 
-.entry-meta:first-of-type {
-  text-align: left;
+.entry-numbers strong,
+.entry-numbers span {
+  display: block;
+}
+
+.entry-numbers strong {
+  font-size: 1.25rem;
+}
+
+.entry-numbers span {
+  color: var(--muted);
+  font-size: 0.75rem;
 }
 
 .setup {
@@ -219,5 +259,20 @@ code {
 
   .card strong {
     font-size: 1.45rem;
+  }
+
+  .trend-head,
+  .trend-row {
+    grid-template-columns: 3.8rem 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .trend-head {
+    padding-left: 3.8rem;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .entry {
+    padding: 0.75rem;
   }
 }

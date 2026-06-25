@@ -11,11 +11,18 @@
   </head>
   <body>
     <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Dashboard</p>
+          <h2 id="userName">Arun</h2>
+        </div>
+      </header>
+
       <section class="hero">
         <div>
           <p class="eyebrow">Today</p>
-          <h1 id="calories">—</h1>
-          <p id="updated" class="muted">Loading dashboard…</p>
+          <h1 id="calories">-</h1>
+          <p id="updated" class="muted">Loading dashboard...</p>
         </div>
         <button id="refresh" type="button">Refresh</button>
       </section>
@@ -23,26 +30,11 @@
       <section class="grid two">
         <article class="card">
           <span class="label">Protein</span>
-          <strong id="protein">—</strong>
+          <strong id="protein">-</strong>
         </article>
         <article class="card">
-          <span class="label">Eating out</span>
-          <strong id="eatingOut">—</strong>
-        </article>
-      </section>
-
-      <section class="grid three">
-        <article class="card compact">
-          <span class="label">Junk</span>
-          <strong id="junk">—</strong>
-        </article>
-        <article class="card compact">
-          <span class="label">Alcohol</span>
-          <strong id="alcohol">—</strong>
-        </article>
-        <article class="card compact">
-          <span class="label">7d avg</span>
-          <strong id="avg7">—</strong>
+          <span class="label">Alcohol/Junk</span>
+          <strong id="alcoholJunk">-</strong>
         </article>
       </section>
 
@@ -51,12 +43,16 @@
           <h2>Last 7 days</h2>
           <span id="range7" class="muted"></span>
         </div>
-        <div id="bars" class="bars"></div>
+        <div class="trend-head">
+          <span>Calories</span>
+          <span>Protein</span>
+        </div>
+        <div id="trend" class="trend"></div>
       </section>
 
       <section class="card">
         <div class="section-title">
-          <h2>Recent entries</h2>
+          <h2>Today's entries</h2>
         </div>
         <div id="entries" class="entries"></div>
       </section>

@@ -2,14 +2,12 @@ const STORAGE_KEY = "calorie-dashboard-settings";
 const DATA_KEY = "calorie-dashboard-last-data";
 
 const elements = {
+  userName: document.querySelector("#userName"),
   calories: document.querySelector("#calories"),
   protein: document.querySelector("#protein"),
-  eatingOut: document.querySelector("#eatingOut"),
-  junk: document.querySelector("#junk"),
-  alcohol: document.querySelector("#alcohol"),
-  avg7: document.querySelector("#avg7"),
+  alcoholJunk: document.querySelector("#alcoholJunk"),
   updated: document.querySelector("#updated"),
-  bars: document.querySelector("#bars"),
+  trend: document.querySelector("#trend"),
   entries: document.querySelector("#entries"),
   range7: document.querySelector("#range7"),
   refresh: document.querySelector("#refresh"),
@@ -48,6 +46,14 @@ function shortDate(date) {
   }).format(new Date(`${date}T00:00:00+05:30`));
 }
 
+function displayName(user) {
+  return String(user || "arun")
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
 function setText(name, value) {
   elements[name].textContent = value;
 }
@@ -68,17 +74,12 @@ function escapeHtml(value) {
 function render(data, stale = false) {
   const today = data.today ?? {};
   const last7 = data.last7Days ?? [];
-  const entries = data.recentEntries ?? [];
-  const averageCalories = last7.length
-    ? last7.reduce((total, day) => total + Number(day.calories || 0), 0) / last7.length
-    : 0;
+  const entries = data.todayEntries ?? [];
 
+  setText("userName", displayName(data.user));
   setText("calories", formatNumber(today.calories));
   setText("protein", `${formatNumber(today.protein, 1)} g`);
-  setText("eatingOut", formatNumber(today.eatingOutCalories));
-  setText("junk", formatNumber(today.junkCalories));
-  setText("alcohol", formatNumber(today.alcoholCalories));
-  setText("avg7", formatNumber(averageCalories));
+  setText("alcoholJunk", formatNumber(Number(today.junkCalories || 0) + Number(today.alcoholCalories || 0)));
   setText(
     "updated",
     `${stale ? "Cached" : "Updated"} ${new Date(data.updatedAt).toLocaleString("en-IN", {
@@ -88,19 +89,18 @@ function render(data, stale = false) {
   );
 
   elements.range7.textContent = last7.length
-    ? `${shortDate(last7[0].date)} – ${shortDate(last7[last7.length - 1].date)}`
+    ? `${shortDate(last7[0].date)} - ${shortDate(last7[last7.length - 1].date)}`
     : "";
 
-  const maxCalories = Math.max(1, ...last7.map((day) => Number(day.calories || 0)));
-  elements.bars.innerHTML = last7
+  elements.trend.innerHTML = last7
     .map((day) => {
       const calories = Number(day.calories || 0);
-      const width = Math.max(4, Math.round((calories / maxCalories) * 100));
+      const protein = Number(day.protein || 0);
       return `
-        <div class="bar-row">
-          <span>${shortDate(day.date)}</span>
-          <span class="bar-track"><span class="bar-fill" style="width:${width}%"></span></span>
-          <span>${formatNumber(calories)}</span>
+        <div class="trend-row">
+          <span class="trend-date">${shortDate(day.date)}</span>
+          <strong>${formatNumber(calories)}</strong>
+          <strong>${formatNumber(protein, 1)}g</strong>
         </div>
       `;
     })
@@ -113,19 +113,23 @@ function render(data, stale = false) {
             <article class="entry">
               <div>
                 <div class="entry-title">${escapeHtml(entry.name)}</div>
-                <div class="entry-meta">${shortDate(entry.date)} · ${escapeHtml(entry.meal || "Meal")} · ${escapeHtml(entry.type)}</div>
+                <div class="entry-meta">${escapeHtml(entry.meal || "Meal")} · ${escapeHtml(entry.type)}</div>
               </div>
-              <div class="entry-meta">${formatNumber(entry.calories)} kcal<br>${formatNumber(entry.protein, 1)}g</div>
+              <div class="entry-numbers">
+                <strong>${formatNumber(entry.calories)}</strong>
+                <span>kcal</span>
+                <span>${formatNumber(entry.protein, 1)}g protein</span>
+              </div>
             </article>
           `,
         )
         .join("")
-    : `<p class="muted">No recent food entries yet.</p>`;
+    : `<p class="muted">No food logged today yet.</p>`;
 }
 
 async function loadFresh(settings) {
   elements.refresh.disabled = true;
-  elements.refresh.textContent = "Refreshing…";
+  elements.refresh.textContent = "Refreshing...";
 
   const url = new URL("/api/dashboard", window.location.origin);
   url.searchParams.set("user", settings.user);

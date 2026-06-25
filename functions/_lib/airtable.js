@@ -172,7 +172,7 @@ function summaryValue(record) {
   };
 }
 
-function recentEntries(records) {
+function foodEntries(records) {
   return records
     .map((record) => {
       const fields = record.fields ?? {};
@@ -187,7 +187,7 @@ function recentEntries(records) {
     })
     .filter((entry) => entry.date)
     .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 12);
+    .slice(0, 30);
 }
 
 export async function getDashboardData(user, env) {
@@ -225,6 +225,6 @@ export async function getDashboardData(user, env) {
     today: todayTotals,
     last7Days,
     last30Days,
-    recentEntries: recentEntries(detailedRecords),
+    todayEntries: foodEntries(detailedRecords).filter((entry) => entry.date === today),
   };
 }
