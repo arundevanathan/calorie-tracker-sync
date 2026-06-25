@@ -46,12 +46,39 @@ button:disabled {
 }
 
 .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 0.4rem 0.25rem 0;
 }
 
 .topbar h2 {
   font-size: 1.8rem;
   letter-spacing: -0.04em;
+}
+
+.switcher {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(16, 27, 45, 0.72);
+}
+
+.switch-button {
+  padding: 0.55rem 0.75rem;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+  font-size: 0.85rem;
+}
+
+.switch-button.active {
+  background: var(--accent);
+  color: #04111f;
+  box-shadow: 0 8px 20px rgba(56, 189, 248, 0.18);
 }
 
 .hero,
@@ -274,5 +301,19 @@ code {
 
   .entry {
     padding: 0.75rem;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .switcher {
+    width: 100%;
+  }
+
+  .switch-button {
+    flex: 1;
   }
 }

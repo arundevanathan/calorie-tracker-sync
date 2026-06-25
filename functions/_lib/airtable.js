@@ -2,11 +2,16 @@ const TIME_ZONE = "Asia/Kolkata";
 const DEFAULT_USER = "arun";
 const DETAILED_TABLE = "Detailed Data";
 const SUMMARY_TABLE = "Daily Summary";
+const USER_TO_PERSON = {
+  arun: "Arun",
+  ishita: "Ishita",
+};
 
 const FIELD_NAMES = {
-  detailed: ["Entry Name", "Consumption Date", "Meal", "Calories", "Protein", "Type"],
+  detailed: ["Entry Name", "Consumption Date", "Meal", "Calories", "Protein", "Type", "Person"],
   summary: [
     "Date",
+    "Person",
     "Calories",
     "Protein",
     "Weight",
@@ -34,8 +39,13 @@ export function errorResponse(message, status = 400) {
 export function authenticate(request, env) {
   const url = new URL(request.url);
   const user = (url.searchParams.get("user") || DEFAULT_USER).toLowerCase();
+  const person = USER_TO_PERSON[user];
 
-  return { user };
+  if (!person) {
+    return { error: errorResponse(`Unknown dashboard user: ${user}`, 404) };
+  }
+
+  return { user, person };
 }
 
 export function requireConfig(user, env) {
@@ -131,9 +141,10 @@ async function listAll({ token, baseId, tableName, fields }) {
   return records;
 }
 
-function emptyTotals(date) {
+function emptyTotals(date, person) {
   return {
     date,
+    person,
     calories: 0,
     protein: 0,
     weight: null,
@@ -143,11 +154,12 @@ function emptyTotals(date) {
   };
 }
 
-function detailedTotals(records, date) {
-  const totals = emptyTotals(date);
+function detailedTotals(records, date, person) {
+  const totals = emptyTotals(date, person);
   for (const record of records) {
     const fields = record.fields ?? {};
     if (fields["Consumption Date"] !== date) continue;
+    if (fields.Person !== person) continue;
 
     const calories = numeric(fields.Calories);
     totals.calories += calories;
@@ -163,6 +175,7 @@ function summaryValue(record) {
   const fields = record.fields ?? {};
   return {
     date: fields.Date,
+    person: fields.Person,
     calories: numeric(fields.Calories),
     protein: numeric(fields.Protein),
     weight: fields.Weight ?? null,
@@ -178,6 +191,7 @@ function foodEntries(records) {
       const fields = record.fields ?? {};
       return {
         date: fields["Consumption Date"],
+        person: fields.Person,
         meal: fields.Meal ?? "",
         name: fields["Entry Name"] ?? "Food entry",
         calories: numeric(fields.Calories),
@@ -190,7 +204,7 @@ function foodEntries(records) {
     .slice(0, 30);
 }
 
-export async function getDashboardData(user, env) {
+export async function getDashboardData(user, person, env) {
   const config = requireConfig(user, env);
   const [detailedRecords, summaryRecords] = await Promise.all([
     listAll({ ...config, tableName: DETAILED_TABLE, fields: FIELD_NAMES.detailed }),
@@ -199,12 +213,12 @@ export async function getDashboardData(user, env) {
 
   const today = todayKey();
   const thirtyDaysAgo = dateNDaysAgo(29);
-  const todayTotals = detailedTotals(detailedRecords, today);
+  const todayTotals = detailedTotals(detailedRecords, today, person);
 
   const summariesByDate = new Map(
     summaryRecords
       .map(summaryValue)
-      .filter((summary) => summary.date && summary.date >= thirtyDaysAgo)
+      .filter((summary) => summary.person === person && summary.date && summary.date >= thirtyDaysAgo)
       .map((summary) => [summary.date, summary]),
   );
 
@@ -223,10 +237,11 @@ export async function getDashboardData(user, env) {
 
   return {
     user,
+    person,
     updatedAt: nowInKolkata(),
     today: todayTotals,
     last7Days,
     last30Days,
-    todayEntries: foodEntries(detailedRecords).filter((entry) => entry.date === today),
+    todayEntries: foodEntries(detailedRecords).filter((entry) => entry.person === person && entry.date === today),
   };
 }

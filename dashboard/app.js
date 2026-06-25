@@ -1,5 +1,6 @@
 const STORAGE_KEY = "calorie-dashboard-settings";
-const DATA_KEY = "calorie-dashboard-last-data";
+const DATA_KEY_PREFIX = "calorie-dashboard-last-data";
+const supportedUsers = ["arun", "ishita"];
 
 const elements = {
   userName: document.querySelector("#userName"),
@@ -11,26 +12,31 @@ const elements = {
   entries: document.querySelector("#entries"),
   range7: document.querySelector("#range7"),
   refresh: document.querySelector("#refresh"),
-  setup: document.querySelector("#setup"),
+  switchButtons: [...document.querySelectorAll("[data-user]")],
 };
 
 function readSettings() {
   const params = new URLSearchParams(window.location.search);
-  const fromUrl = {
-    user: params.get("user"),
-  };
-
   const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  const candidateUser = (params.get("user") || saved.user || "arun").toLowerCase();
   const settings = {
-    user: fromUrl.user || saved.user || "arun",
+    user: supportedUsers.includes(candidateUser) ? candidateUser : "arun",
   };
 
-  if (fromUrl.user) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  if (params.get("user")) {
+    writeSettings(settings);
     window.history.replaceState({}, "", window.location.pathname);
   }
 
   return settings;
+}
+
+function writeSettings(settings) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+}
+
+function dataKey(user) {
+  return `${DATA_KEY_PREFIX}:${user}`;
 }
 
 function formatNumber(value, digits = 0) {
@@ -71,12 +77,21 @@ function escapeHtml(value) {
   });
 }
 
+function updateSwitcher(activeUser) {
+  for (const button of elements.switchButtons) {
+    const isActive = button.dataset.user === activeUser;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  }
+}
+
 function render(data, stale = false) {
   const today = data.today ?? {};
   const last7 = data.last7Days ?? [];
   const entries = data.todayEntries ?? [];
 
-  setText("userName", displayName(data.user));
+  setText("userName", data.person || displayName(data.user));
+  updateSwitcher(data.user);
   setText("calories", formatNumber(today.calories));
   setText("protein", `${formatNumber(today.protein, 1)} g`);
   setText("alcoholJunk", formatNumber(Number(today.junkCalories || 0) + Number(today.alcoholCalories || 0)));
@@ -113,7 +128,7 @@ function render(data, stale = false) {
             <article class="entry">
               <div>
                 <div class="entry-title">${escapeHtml(entry.name)}</div>
-                <div class="entry-meta">${escapeHtml(entry.meal || "Meal")} · ${escapeHtml(entry.type)}</div>
+                <div class="entry-meta">${escapeHtml(entry.meal || "Meal")} - ${escapeHtml(entry.type)}</div>
               </div>
               <div class="entry-numbers">
                 <strong>${formatNumber(entry.calories)}</strong>
@@ -141,26 +156,22 @@ async function loadFresh(settings) {
     throw new Error(payload.error || "Dashboard refresh failed.");
   }
 
-  localStorage.setItem(DATA_KEY, JSON.stringify(payload));
+  localStorage.setItem(dataKey(settings.user), JSON.stringify(payload));
   render(payload);
 }
 
-async function main() {
-  const settings = readSettings();
-  const cached = JSON.parse(localStorage.getItem(DATA_KEY) || "null");
-  if (cached) render(cached, true);
+function showLoadingState(settings) {
+  setText("userName", displayName(settings.user));
+  setText("calories", "-");
+  setText("protein", "-");
+  setText("alcoholJunk", "-");
+  elements.range7.textContent = "";
+  elements.trend.innerHTML = "";
+  elements.entries.innerHTML = `<p class="muted">Loading ${displayName(settings.user)}...</p>`;
+  elements.updated.textContent = "Loading dashboard...";
+}
 
-  elements.refresh.addEventListener("click", () => {
-    loadFresh(settings)
-      .catch((error) => {
-        elements.updated.textContent = error.message;
-      })
-      .finally(() => {
-        elements.refresh.disabled = false;
-        elements.refresh.textContent = "Refresh";
-      });
-  });
-
+async function refresh(settings) {
   try {
     await loadFresh(settings);
   } catch (error) {
@@ -169,6 +180,39 @@ async function main() {
     elements.refresh.disabled = false;
     elements.refresh.textContent = "Refresh";
   }
+}
+
+async function main() {
+  const settings = readSettings();
+  writeSettings(settings);
+  updateSwitcher(settings.user);
+
+  const cached = JSON.parse(localStorage.getItem(dataKey(settings.user)) || "null");
+  if (cached) render(cached, true);
+  else showLoadingState(settings);
+
+  for (const button of elements.switchButtons) {
+    button.addEventListener("click", () => {
+      const user = button.dataset.user;
+      if (!supportedUsers.includes(user) || user === settings.user) return;
+
+      settings.user = user;
+      writeSettings(settings);
+      updateSwitcher(settings.user);
+
+      const userCached = JSON.parse(localStorage.getItem(dataKey(settings.user)) || "null");
+      if (userCached) render(userCached, true);
+      else showLoadingState(settings);
+
+      refresh(settings);
+    });
+  }
+
+  elements.refresh.addEventListener("click", () => {
+    refresh(settings);
+  });
+
+  await refresh(settings);
 }
 
 main();

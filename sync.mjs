@@ -4,6 +4,10 @@ const SUMMARY_TABLE = "Daily Summary";
 const TIME_ZONE = "Asia/Kolkata";
 const WINDOW_DAYS = 5;
 const INCLUDE_TODAY = process.env.INCLUDE_TODAY === "true";
+const PEOPLE = (process.env.PEOPLE || "Arun,Ishita")
+  .split(",")
+  .map((person) => person.trim())
+  .filter(Boolean);
 
 const token = process.env.AIRTABLE_TOKEN;
 if (!token) throw new Error("AIRTABLE_TOKEN is not set.");
@@ -80,8 +84,13 @@ function newTotals() {
   return { calories: 0, protein: 0, junk: 0, alcohol: 0, eatingOut: 0 };
 }
 
-function fieldsFor(totals) {
+function keyFor(person, date) {
+  return `${person}::${date}`;
+}
+
+function fieldsFor(person, totals) {
   return {
+    Person: person,
     Calories: totals.calories,
     Protein: totals.protein,
     "Calories from Junk": totals.junk,
@@ -122,48 +131,60 @@ async function remove(recordIds) {
 }
 
 const activeDates = new Set(completedDateKeys());
+const activePeople = new Set(PEOPLE);
 const [detailedRecords, summaryRecords] = await Promise.all([
   listAll(DETAILED_TABLE),
   listAll(SUMMARY_TABLE),
 ]);
 
-const totalsByDate = new Map();
-for (const { fields } of detailedRecords) {
+const totalsByPersonDate = new Map();
+for (const { id, fields } of detailedRecords) {
   const date = fields["Consumption Date"];
   if (!activeDates.has(date)) continue;
 
-  const totals = totalsByDate.get(date) ?? newTotals();
+  const person = fields.Person;
+  if (!person) throw new Error(`Detailed Data record ${id} is missing Person.`);
+  if (!activePeople.has(person)) throw new Error(`Detailed Data record ${id} has unknown Person: ${person}.`);
+
+  const key = keyFor(person, date);
+  const totals = totalsByPersonDate.get(key) ?? { person, date, ...newTotals() };
   const calories = numeric(fields.Calories);
   totals.calories += calories;
   totals.protein += numeric(fields.Protein);
   if (fields.Type === "Junk") totals.junk += calories;
   if (fields.Type === "Alcohol") totals.alcohol += calories;
   if (fields.Type === "Eating Out") totals.eatingOut += calories;
-  totalsByDate.set(date, totals);
+  totalsByPersonDate.set(key, totals);
 }
 
-const summaryByDate = new Map();
+const summaryByPersonDate = new Map();
 for (const record of summaryRecords) {
   const date = record.fields.Date;
   if (!activeDates.has(date)) continue;
-  if (summaryByDate.has(date)) {
-    throw new Error(`Duplicate Daily Summary records found for ${date}. Resolve the duplicate before retrying.`);
+
+  const person = record.fields.Person;
+  if (!person) throw new Error(`Daily Summary record ${record.id} for ${date} is missing Person.`);
+  if (!activePeople.has(person)) throw new Error(`Daily Summary record ${record.id} has unknown Person: ${person}.`);
+
+  const key = keyFor(person, date);
+  if (summaryByPersonDate.has(key)) {
+    throw new Error(`Duplicate Daily Summary records found for ${person} on ${date}. Resolve the duplicate before retrying.`);
   }
-  summaryByDate.set(date, record);
+  summaryByPersonDate.set(key, record);
 }
 
 const creates = [];
 const updates = [];
-for (const [date, totals] of totalsByDate) {
-  const existing = summaryByDate.get(date);
-  const fields = fieldsFor(totals);
+for (const [key, totals] of totalsByPersonDate) {
+  const existing = summaryByPersonDate.get(key);
+  const fields = fieldsFor(totals.person, totals);
   if (existing) updates.push({ id: existing.id, fields });
-  else creates.push({ fields: { Date: date, ...fields } });
+  else creates.push({ fields: { Date: totals.date, ...fields } });
 }
 
 const deletes = [];
-for (const [date, record] of summaryByDate) {
-  if (!totalsByDate.has(date)) deletes.push(record.id);
+for (const [key, record] of summaryByPersonDate) {
+  if (!totalsByPersonDate.has(key)) deletes.push(record.id);
 }
 
 await create(creates);
@@ -172,6 +193,7 @@ await remove(deletes);
 
 console.log(JSON.stringify({
   includeToday: INCLUDE_TODAY,
+  people: PEOPLE,
   processedDates: [...activeDates].sort(),
   created: creates.length,
   updated: updates.length,

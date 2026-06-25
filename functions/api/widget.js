@@ -10,9 +10,10 @@ export async function onRequestGet({ request, env }) {
   if (auth.error) return auth.error;
 
   try {
-    const dashboard = await getDashboardData(auth.user, env);
+    const dashboard = await getDashboardData(auth.user, auth.person, env);
     return jsonResponse({
       user: dashboard.user,
+      person: dashboard.person,
       date: dashboard.today.date,
       calories: dashboard.today.calories,
       protein: dashboard.today.protein,

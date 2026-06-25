@@ -30,4 +30,5 @@ jobs:
         env:
           AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
           INCLUDE_TODAY: ${{ inputs.include_today || 'false' }}
+          PEOPLE: Arun,Ishita
         run: node sync.mjs
