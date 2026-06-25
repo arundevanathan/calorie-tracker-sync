@@ -75,4 +75,6 @@ Airtable. The Refresh button always fetches fresh Airtable data immediately.
   person-filtered payloads.
 
 The Airtable token is used only inside Cloudflare Pages Functions and is never
-sent to the browser.
+sent to the browser. The dashboard API fetches only the selected person's
+today entries and seven most recent completed Daily Summary dates; long-term
+trend dashboards should use separate endpoints later.

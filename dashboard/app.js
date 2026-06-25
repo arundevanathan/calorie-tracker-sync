@@ -4,7 +4,6 @@ const CACHE_TTL_MS = 2 * 60 * 60 * 1000;
 const supportedUsers = ["arun", "ishita"];
 
 const elements = {
-  userName: document.querySelector("#userName"),
   calories: document.querySelector("#calories"),
   protein: document.querySelector("#protein"),
   alcoholJunk: document.querySelector("#alcoholJunk"),
@@ -127,7 +126,6 @@ function render(data, options = {}) {
   const last7 = data.last7Days ?? [];
   const entries = data.todayEntries ?? [];
 
-  setText("userName", data.person || displayName(data.user));
   updateSwitcher(data.user);
   setText("calories", formatNumber(today.calories));
   setText("protein", `${formatNumber(today.protein, 1)} g`);
@@ -198,7 +196,6 @@ async function loadFresh(settings) {
 }
 
 function showLoadingState(settings) {
-  setText("userName", displayName(settings.user));
   setText("calories", "-");
   setText("protein", "-");
   setText("alcoholJunk", "-");

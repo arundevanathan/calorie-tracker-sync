@@ -141,6 +141,38 @@ async function listAll({ token, baseId, tableName, fields }) {
   return records;
 }
 
+async function listFiltered({ token, baseId, tableName, fields, filterByFormula, sort }) {
+  const records = [];
+  let offset;
+
+  do {
+    const url = airtableUrl(baseId, tableName, { pageSize: 100, offset, filterByFormula });
+    for (const field of fields) url.searchParams.append("fields[]", field);
+    for (const sortItem of sort ?? []) {
+      url.searchParams.append("sort[0][field]", sortItem.field);
+      url.searchParams.append("sort[0][direction]", sortItem.direction);
+    }
+
+    const payload = await airtableRequest(token, url);
+    records.push(...payload.records);
+    offset = payload.offset;
+  } while (offset);
+
+  return records;
+}
+
+function formulaString(value) {
+  return `'${String(value).replace(/'/g, "\\'")}'`;
+}
+
+function isSameDayFormula(fieldName, date) {
+  return `IS_SAME({${fieldName}}, ${formulaString(date)}, 'day')`;
+}
+
+function completedDateKeys(count) {
+  return Array.from({ length: count }, (_, index) => dateNDaysAgo(index + 1));
+}
+
 function emptyTotals(date, person) {
   return {
     date,
@@ -206,33 +238,38 @@ function foodEntries(records) {
 
 export async function getDashboardData(user, person, env) {
   const config = requireConfig(user, env);
+  const today = todayKey();
+  const last7DateKeys = completedDateKeys(7);
+  const personFormula = `{Person}=${formulaString(person)}`;
+
   const [detailedRecords, summaryRecords] = await Promise.all([
-    listAll({ ...config, tableName: DETAILED_TABLE, fields: FIELD_NAMES.detailed }),
-    listAll({ ...config, tableName: SUMMARY_TABLE, fields: FIELD_NAMES.summary }),
+    listFiltered({
+      ...config,
+      tableName: DETAILED_TABLE,
+      fields: FIELD_NAMES.detailed,
+      filterByFormula: `AND(${personFormula}, ${isSameDayFormula("Consumption Date", today)})`,
+    }),
+    listFiltered({
+      ...config,
+      tableName: SUMMARY_TABLE,
+      fields: FIELD_NAMES.summary,
+      filterByFormula: `AND(${personFormula}, OR(${last7DateKeys
+        .map((date) => isSameDayFormula("Date", date))
+        .join(", ")}))`,
+      sort: [{ field: "Date", direction: "desc" }],
+    }),
   ]);
 
-  const today = todayKey();
-  const thirtyDaysAgo = dateNDaysAgo(29);
   const todayTotals = detailedTotals(detailedRecords, today, person);
 
   const summariesByDate = new Map(
     summaryRecords
       .map(summaryValue)
-      .filter((summary) => summary.person === person && summary.date && summary.date >= thirtyDaysAgo)
+      .filter((summary) => summary.person === person && last7DateKeys.includes(summary.date))
       .map((summary) => [summary.date, summary]),
   );
 
-  summariesByDate.set(today, {
-    ...todayTotals,
-    weight: summariesByDate.get(today)?.weight ?? todayTotals.weight,
-  });
-
-  const last30Days = [...summariesByDate.values()]
-    .filter((summary) => summary.date >= thirtyDaysAgo)
-    .sort((a, b) => a.date.localeCompare(b.date));
-
-  const last7Days = last30Days
-    .filter((summary) => summary.date < today && summary.date >= dateNDaysAgo(7))
+  const last7Days = [...summariesByDate.values()]
     .sort((a, b) => b.date.localeCompare(a.date));
 
   return {
@@ -241,7 +278,7 @@ export async function getDashboardData(user, person, env) {
     updatedAt: nowInKolkata(),
     today: todayTotals,
     last7Days,
-    last30Days,
+    last30Days: last7Days,
     todayEntries: foodEntries(detailedRecords).filter((entry) => entry.person === person && entry.date === today),
   };
 }
