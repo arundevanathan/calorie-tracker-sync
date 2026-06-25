@@ -33,22 +33,21 @@ Add these Cloudflare Pages environment variables/secrets:
 
 - `AIRTABLE_TOKEN`: Airtable personal access token with read access.
 - `AIRTABLE_BASE_ID`: `appVP3GZ2ap1L422y`
-- `DASHBOARD_KEY_ARUN`: a long random private key for the dashboard URL.
 
 Open the deployed dashboard once with:
 
 ```text
-https://<your-project>.pages.dev/?user=arun&key=<DASHBOARD_KEY_ARUN>
+https://<your-project>.pages.dev/?user=arun
 ```
 
-The dashboard stores the user/key in browser local storage, then removes the
-key from the visible URL. Use the Refresh button after logging a meal to fetch
-fresh Airtable data immediately.
+The dashboard stores the user in browser local storage, then removes it from the
+visible URL. Use the Refresh button after logging a meal to fetch fresh Airtable
+data immediately.
 
 ## Dashboard API
 
-- `/api/dashboard?user=arun&key=<key>` returns the full mobile dashboard payload.
-- `/api/widget?user=arun&key=<key>` returns a small widget-friendly payload.
+- `/api/dashboard?user=arun` returns the full mobile dashboard payload.
+- `/api/widget?user=arun` returns a small widget-friendly payload.
 
 The Airtable token is used only inside Cloudflare Pages Functions and is never
 sent to the browser.

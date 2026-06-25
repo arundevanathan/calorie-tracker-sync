@@ -20,16 +20,14 @@ function readSettings() {
   const params = new URLSearchParams(window.location.search);
   const fromUrl = {
     user: params.get("user"),
-    key: params.get("key"),
   };
 
   const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
   const settings = {
     user: fromUrl.user || saved.user || "arun",
-    key: fromUrl.key || saved.key || "",
   };
 
-  if (fromUrl.user || fromUrl.key) {
+  if (fromUrl.user) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     window.history.replaceState({}, "", window.location.pathname);
   }
@@ -126,17 +124,11 @@ function render(data, stale = false) {
 }
 
 async function loadFresh(settings) {
-  if (!settings.key) {
-    elements.setup.classList.remove("hidden");
-    throw new Error("Missing dashboard key.");
-  }
-
   elements.refresh.disabled = true;
   elements.refresh.textContent = "Refreshing…";
 
   const url = new URL("/api/dashboard", window.location.origin);
   url.searchParams.set("user", settings.user);
-  url.searchParams.set("key", settings.key);
 
   const response = await fetch(url);
   const payload = await response.json();

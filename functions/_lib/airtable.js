@@ -34,15 +34,6 @@ export function errorResponse(message, status = 400) {
 export function authenticate(request, env) {
   const url = new URL(request.url);
   const user = (url.searchParams.get("user") || DEFAULT_USER).toLowerCase();
-  const key = url.searchParams.get("key") || request.headers.get("x-dashboard-key");
-  const expected = env[`DASHBOARD_KEY_${user.toUpperCase()}`];
-
-  if (!expected) {
-    return { error: errorResponse(`Dashboard user is not configured: ${user}`, 404) };
-  }
-  if (!key || key !== expected) {
-    return { error: errorResponse("Missing or invalid dashboard key.", 401) };
-  }
 
   return { user };
 }
