@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>Calories</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Today</p>
+          <h1 id="calories">—</h1>
+          <p id="updated" class="muted">Loading dashboard…</p>
+        </div>
+        <button id="refresh" type="button">Refresh</button>
+      </section>
+
+      <section class="grid two">
+        <article class="card">
+          <span class="label">Protein</span>
+          <strong id="protein">—</strong>
+        </article>
+        <article class="card">
+          <span class="label">Eating out</span>
+          <strong id="eatingOut">—</strong>
+        </article>
+      </section>
+
+      <section class="grid three">
+        <article class="card compact">
+          <span class="label">Junk</span>
+          <strong id="junk">—</strong>
+        </article>
+        <article class="card compact">
+          <span class="label">Alcohol</span>
+          <strong id="alcohol">—</strong>
+        </article>
+        <article class="card compact">
+          <span class="label">7d avg</span>
+          <strong id="avg7">—</strong>
+        </article>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2>Last 7 days</h2>
+          <span id="range7" class="muted"></span>
+        </div>
+        <div id="bars" class="bars"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2>Recent entries</h2>
+        </div>
+        <div id="entries" class="entries"></div>
+      </section>
+
+      <section id="setup" class="setup hidden">
+        <h2>Private link needed</h2>
+        <p>
+          Open this dashboard once with <code>?user=arun&amp;key=YOUR_KEY</code>.
+          The key will be saved on this device for quick future opens.
+        </p>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

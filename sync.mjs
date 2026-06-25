@@ -3,7 +3,7 @@ const DETAILED_TABLE = "Detailed Data";
 const SUMMARY_TABLE = "Daily Summary";
 const TIME_ZONE = "Asia/Kolkata";
 const WINDOW_DAYS = 5;
-const INCLUDE_TODAY = true;
+const INCLUDE_TODAY = process.env.INCLUDE_TODAY === "true";
 
 const token = process.env.AIRTABLE_TOKEN;
 if (!token) throw new Error("AIRTABLE_TOKEN is not set.");
