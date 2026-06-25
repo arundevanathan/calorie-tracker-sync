@@ -59,11 +59,13 @@ https://<your-project>.pages.dev/?user=arun
 https://<your-project>.pages.dev/?user=ishita
 ```
 
-The dashboard stores the last selected user in browser local storage, then
-removes it from the visible URL. If no user is provided, it opens the last user
-used in that browser, defaulting to Arun. Use the visible Arun/Ishita switcher
-or the Refresh button after logging a meal to fetch fresh Airtable data
-immediately.
+The dashboard stores the last selected user and per-user dashboard data in
+browser local storage, then removes the user from the visible URL. If no user is
+provided, it opens the last user used in that browser, defaulting to Arun.
+
+Opening the dashboard or switching users uses cached data when that user's last
+API refresh was under 2 hours ago. Missing or older cache refreshes from
+Airtable. The Refresh button always fetches fresh Airtable data immediately.
 
 ## Dashboard API
 

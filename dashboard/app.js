@@ -1,5 +1,6 @@
 const STORAGE_KEY = "calorie-dashboard-settings";
 const DATA_KEY_PREFIX = "calorie-dashboard-last-data";
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000;
 const supportedUsers = ["arun", "ishita"];
 
 const elements = {
@@ -37,6 +38,41 @@ function writeSettings(settings) {
 
 function dataKey(user) {
   return `${DATA_KEY_PREFIX}:${user}`;
+}
+
+function readCachedData(user) {
+  const cached = JSON.parse(localStorage.getItem(dataKey(user)) || "null");
+  if (!cached) return null;
+
+  if (cached.payload) return cached;
+
+  // Backward compatibility for the older cache format, which stored the API
+  // payload directly. Show it if present, but refresh it once because it has no
+  // local API-call timestamp.
+  return { fetchedAt: 0, payload: cached };
+}
+
+function writeCachedData(user, payload) {
+  localStorage.setItem(dataKey(user), JSON.stringify({
+    fetchedAt: Date.now(),
+    payload,
+  }));
+}
+
+function isCacheFresh(cached) {
+  return Boolean(cached?.fetchedAt && Date.now() - cached.fetchedAt < CACHE_TTL_MS);
+}
+
+function cacheAgeLabel(fetchedAt) {
+  if (!fetchedAt) return "stale cache";
+
+  const ageMinutes = Math.max(0, Math.round((Date.now() - fetchedAt) / 60000));
+  if (ageMinutes < 1) return "just now";
+  if (ageMinutes < 60) return `${ageMinutes}m ago`;
+
+  const hours = Math.floor(ageMinutes / 60);
+  const minutes = ageMinutes % 60;
+  return minutes ? `${hours}h ${minutes}m ago` : `${hours}h ago`;
 }
 
 function formatNumber(value, digits = 0) {
@@ -85,7 +121,8 @@ function updateSwitcher(activeUser) {
   }
 }
 
-function render(data, stale = false) {
+function render(data, options = {}) {
+  const { fromCache = false, fetchedAt = null } = options;
   const today = data.today ?? {};
   const last7 = data.last7Days ?? [];
   const entries = data.todayEntries ?? [];
@@ -97,7 +134,7 @@ function render(data, stale = false) {
   setText("alcoholJunk", formatNumber(Number(today.junkCalories || 0) + Number(today.alcoholCalories || 0)));
   setText(
     "updated",
-    `${stale ? "Cached" : "Updated"} ${new Date(data.updatedAt).toLocaleString("en-IN", {
+    `${fromCache ? `Cached ${cacheAgeLabel(fetchedAt)}` : "Updated"} ${new Date(data.updatedAt).toLocaleString("en-IN", {
       dateStyle: "medium",
       timeStyle: "short",
     })}`,
@@ -156,7 +193,7 @@ async function loadFresh(settings) {
     throw new Error(payload.error || "Dashboard refresh failed.");
   }
 
-  localStorage.setItem(dataKey(settings.user), JSON.stringify(payload));
+  writeCachedData(settings.user, payload);
   render(payload);
 }
 
@@ -182,14 +219,22 @@ async function refresh(settings) {
   }
 }
 
+async function showCachedThenRefreshIfNeeded(settings) {
+  const cached = readCachedData(settings.user);
+  if (cached) {
+    render(cached.payload, { fromCache: true, fetchedAt: cached.fetchedAt });
+    if (isCacheFresh(cached)) return;
+  } else {
+    showLoadingState(settings);
+  }
+
+  await refresh(settings);
+}
+
 async function main() {
   const settings = readSettings();
   writeSettings(settings);
   updateSwitcher(settings.user);
-
-  const cached = JSON.parse(localStorage.getItem(dataKey(settings.user)) || "null");
-  if (cached) render(cached, true);
-  else showLoadingState(settings);
 
   for (const button of elements.switchButtons) {
     button.addEventListener("click", () => {
@@ -200,11 +245,7 @@ async function main() {
       writeSettings(settings);
       updateSwitcher(settings.user);
 
-      const userCached = JSON.parse(localStorage.getItem(dataKey(settings.user)) || "null");
-      if (userCached) render(userCached, true);
-      else showLoadingState(settings);
-
-      refresh(settings);
+      showCachedThenRefreshIfNeeded(settings);
     });
   }
 
@@ -212,7 +253,7 @@ async function main() {
     refresh(settings);
   });
 
-  await refresh(settings);
+  await showCachedThenRefreshIfNeeded(settings);
 }
 
 main();
