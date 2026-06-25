@@ -217,7 +217,9 @@ export async function getDashboardData(user, env) {
     .filter((summary) => summary.date >= thirtyDaysAgo)
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  const last7Days = last30Days.filter((summary) => summary.date >= dateNDaysAgo(6));
+  const last7Days = last30Days
+    .filter((summary) => summary.date < today && summary.date >= dateNDaysAgo(7))
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   return {
     user,
